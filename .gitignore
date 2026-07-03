@@ -1,0 +1,4 @@
+.venv
+chroma_data
+my_project
+__pycache__
