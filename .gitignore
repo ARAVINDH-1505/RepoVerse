@@ -2,3 +2,4 @@
 chroma_data
 my_project
 __pycache__
+.env
