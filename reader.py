@@ -27,7 +27,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     target_folder = sys.argv[1]
-    files = find_files(target_folder, file_types=[".py", ".md", ".json"])
+    files = find_files(target_folder, file_types=[".py", ".md", ".json",".docx"])
 
     print(f"Found {len(files)} files:")
     for f in files:

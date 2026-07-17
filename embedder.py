@@ -11,7 +11,7 @@ if __name__ == "__main__":
     from reader import find_files
     from splitter import split_file_into_chunks
 
-    files = find_files("D:\VELAI THEDUM PADALAM\MCP", file_types=[".py", ".md", ".json"])
+    files = find_files(r"D:\data conquest\rework\AMF brain rework", file_types=[".py", ".md", ".json",".docx"])
 
     for file in files:
         chunks = split_file_into_chunks(file)

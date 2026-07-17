@@ -22,3 +22,19 @@
 - Found a bug: storage mixes data from different projects since it's one shared collection - needs fixing
 - Phase 1 is functionally complete
 - Next: fix storage isolation, then decide on Phase 2 priorities
+
+## Day 4 - July 15, 2026
+- Fixed the storage isolation bug: each project folder now gets its own separate
+  storage space in Chroma, using a hash of the folder path as the collection name
+- Updated Searcher, Answerer, and the API to all require a folder_path, so the
+  right project's data is always used
+- Found a new bug while testing: when a folder wasn't indexed yet, the AI still
+  answered with made-up information instead of saying it didn't know
+- Learned: this is called hallucination - AI making up an answer when it has
+  no real information. Fixed by checking for empty results before ever calling
+  the AI, so it's not even given the chance to guess
+- Built indexer.py: a proper script to index any folder from the terminal,
+  instead of editing storage.py by hand each time
+- Learned: JSON needs double backslashes or forward slashes for Windows paths,
+  single backslashes break JSON parsing
+- Next: index RepoVerse's own codebase and test the full fixed flow end to end

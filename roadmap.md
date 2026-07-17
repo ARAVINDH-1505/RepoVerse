@@ -12,10 +12,12 @@ Goal: Point at a folder, ask a question, get an answer with the source file show
 - [x] Answerer - sends the question and matching chunks to Groq, gets a real answer
 - [x] Front door (API) - a FastAPI endpoint that ties everything together
 
-## Phase 2: Later (not started)
+## Phase 2: Fixes and Improvements
 
-- [ ] Frontend (simple UI to ask questions and see answers)
+- [x] Fix: storage mixing data across different projects
+- [x] Fix: AI making up answers when no matching code is found
+- [x] Add: indexer script to index any folder from the terminal, no code editing needed
 - [ ] Support more file types (.js, .ts, .java, etc.)
 - [ ] Docker setup for easy running
 - [ ] GitHub integration (point at a repo URL, not just a local folder)
-- [ ] Fix: Chroma storage mixes data from different projects, needs one collection per project
+- [ ] Frontend (simple UI to ask questions and see answers)

@@ -7,9 +7,10 @@ app = FastAPI()
 
 class QuestionRequest(BaseModel):
     question: str
+    folder_path: str
 
 
 @app.post("/query")
 def query(request: QuestionRequest):
-    result = get_answer(request.question)
+    result = get_answer(request.question, request.folder_path)
     return result

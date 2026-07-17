@@ -10,3 +10,8 @@
 - Added Number-maker (Embedder): turns chunks into embeddings using sentence-transformers
 
 ## v1.0.0 - Phase 1 complete: full question-answering loop working end to end
+
+## v1.1.0 - Storage isolation, indexer script, hallucination fix
+- Fixed: each project now has its own separate storage, no more mixed results
+- Added: indexer.py, a proper script to index any folder from the terminal
+- Fixed: system no longer lets the AI make up answers when no code is found

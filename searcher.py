@@ -1,11 +1,9 @@
-import chromadb
 from embedder import create_embeddings
-
-client = chromadb.PersistentClient(path="./chroma_data")
-collection = client.get_or_create_collection(name="repoverse")
+from storage import get_collection
 
 
-def search(query: str, top_k: int = 5) -> dict:
+def search(query: str, folder_path: str, top_k: int = 5) -> dict:
+    collection = get_collection(folder_path)
     query_embedding = create_embeddings([query])[0]
 
     results = collection.query(
@@ -17,8 +15,8 @@ def search(query: str, top_k: int = 5) -> dict:
 
 
 if __name__ == "__main__":
-    question = "what is MCP"
-    results = search(question)
+    question = "how does the database connection work"
+    results = search(question, folder_path="./my_project")
 
     for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
         print("Source:", meta["source"])

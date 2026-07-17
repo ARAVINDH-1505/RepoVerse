@@ -18,7 +18,7 @@ def split_file_into_chunks(file_path: Path, chunk_size: int = 500, overlap: int 
 if __name__ == "__main__":
     from reader import find_files
 
-    files = find_files("./my_project", file_types=[".py", ".md", ".json"])
+    files = find_files(r"D:\data conquest\rework\AMF brain rework", file_types=[".py", ".md", ".json",".docx"])
 
     for file in files:
         chunks = split_file_into_chunks(file)

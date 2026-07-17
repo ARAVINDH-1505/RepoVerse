@@ -35,24 +35,28 @@ each text chunk into a list of 384 numbers.
 These numbers represent the meaning of the text, not the exact words.
 Runs fully on the local machine, no internet needed after first download, no cost.
 
-### Storage (`storage.py`)
-Uses Chroma to save chunks and their numbers to disk, in a folder called chroma_data.
-Data stays saved even after closing the program.
-Each chunk is saved with:
-- a unique id (file path + chunk number)
-- the original text
-- which file it came from
+### Storage (`storage.py`) - updated
+Each project now gets its own separate storage space inside Chroma.
+The folder path is turned into a short unique code (using a hash), and used
+as the collection name. This means two different projects can never mix data,
+even if both are indexed on the same machine.
 
-### Searcher (`searcher.py`)
-Takes a question written in plain English.
-Turns the question into numbers using the same embedder used for the code.
-Searches Chroma for the closest matching chunks.
-Returns the top matches along with which file each one came from.
+### Searcher (`searcher.py`) - updated
+Now requires a folder_path, so it always searches inside the correct
+project's storage, never a shared one.
 
-### Answerer (not built yet)
-Will take the question and the matching chunks found by the Searcher.
-Will send them to Groq (a free AI model API).
-Will return a real written answer, based only on the matching code.
+### Answerer (`answerer.py`) - updated
+Now checks if the Searcher found anything at all before calling Groq.
+If nothing is found, it returns an honest "not indexed yet" message instead
+of letting the AI guess or make something up.
+
+### Indexer (`indexer.py`) - new
+A standalone script that runs the full indexing chain (Reader, Splitter,
+Number-maker, Storage) on any folder, given as a command line argument.
+This replaces manually editing storage.py every time a new folder needs indexing.
+
+Example:
+python indexer.py "D:/path/to/any/project"
 
 ### Front door / API (not built yet)
 A FastAPI endpoint, likely `/query`, that ties the whole flow together.
