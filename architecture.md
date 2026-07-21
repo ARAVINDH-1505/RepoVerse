@@ -61,3 +61,15 @@ python indexer.py "D:/path/to/any/project"
 ### Front door / API (not built yet)
 A FastAPI endpoint, likely `/query`, that ties the whole flow together.
 User sends a question, gets back an answer with source files.
+
+### Summarizer (`summarizer.py`) - new, first agentic component
+Reads code from a project, writes a summary using Groq.
+Unlike other components, this one runs in a loop:
+1. Write a summary
+2. Check it for completeness (covers what/components/tech)
+3. Check it for accuracy (nothing made up, compared against real code)
+4. If either check fails, rewrite using the feedback, try again
+5. Stops after 3 rounds maximum, to avoid an endless loop
+
+This is the project's first real agent behavior: the system decides for itself
+whether its own output is good enough, instead of just returning the first result.
