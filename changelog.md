@@ -15,3 +15,7 @@
 - Fixed: each project now has its own separate storage, no more mixed results
 - Added: indexer.py, a proper script to index any folder from the terminal
 - Fixed: system no longer lets the AI make up answers when no code is found
+
+## v1.2.0 - First agentic component: Repo Summarizer
+- Added summarizer.py with a self-checking loop (completeness + accuracy)
+- Caught and fixed a real hallucination: summary claimed a UI existed when it did not
