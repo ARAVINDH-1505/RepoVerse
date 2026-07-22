@@ -21,3 +21,11 @@ Goal: Point at a folder, ask a question, get an answer with the source file show
 - [ ] Docker setup for easy running
 - [ ] GitHub integration (point at a repo URL, not just a local folder)
 - [ ] Frontend (simple UI to ask questions and see answers)
+
+## Phase 3: Agentic Features
+
+- [x] Repo Summarizer - reads project code, writes a summary, checks its own
+      work for completeness and accuracy, improves itself in a loop
+- [ ] Bug Finder - finds real issues in code, filters out false positives
+- [ ] Fix Explainer - explains a bug and proposes a fix, checks the fix before showing it
+- [ ] Decide: GitHub repo support (URL-based, not just local folder)
