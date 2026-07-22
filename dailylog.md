@@ -38,3 +38,15 @@
 - Learned: JSON needs double backslashes or forward slashes for Windows paths,
   single backslashes break JSON parsing
 - Next: index RepoVerse's own codebase and test the full fixed flow end to end
+
+## Day 5 - July 21, 2026
+- Built the first real agentic feature: Repo Summarizer, using a generate-check-improve loop
+- First version only checked completeness, and passed in 1 round despite containing a
+  hallucination (claimed the project has a UI, which it does not)
+- Learned: a self-check step is only as good as what it actually checks for - completeness
+  and accuracy are different questions and need separate checks
+- Added a second checker for accuracy, comparing the summary against the real code
+- Reran the summarizer: took 3 rounds this time, and the hallucination was gone
+- Learned: more self-checking means better output but more API calls - real trade-off,
+  need a hard iteration cap so the agent can never loop forever
+- Next: build the Bug Finder agent
