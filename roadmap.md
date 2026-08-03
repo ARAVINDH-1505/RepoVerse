@@ -26,6 +26,6 @@ Goal: Point at a folder, ask a question, get an answer with the source file show
 
 - [x] Repo Summarizer - reads project code, writes a summary, checks its own
       work for completeness and accuracy, improves itself in a loop
-- [ ] Bug Finder - finds real issues in code, filters out false positives
+- [x] Bug Finder - finds real issues in code, filters out false positives
 - [ ] Fix Explainer - explains a bug and proposes a fix, checks the fix before showing it
 - [ ] Decide: GitHub repo support (URL-based, not just local folder)
