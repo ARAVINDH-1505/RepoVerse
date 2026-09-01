@@ -1,10 +1,7 @@
-import os
 import sys
 import json
-from groq import Groq
 from reader import find_files
-
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+from groq_client import call_groq
 
 
 def read_file_contents(files, max_chars_per_file: int = 1500) -> list[dict]:
@@ -17,9 +14,11 @@ def read_file_contents(files, max_chars_per_file: int = 1500) -> list[dict]:
         file_data.append({"path": str(file), "content": text[:max_chars_per_file]})
     return file_data
 
+
 def is_valid_bug(bug: dict) -> bool:
     required_keys = {"line_hint", "issue", "why"}
     return isinstance(bug, dict) and required_keys.issubset(bug.keys())
+
 
 def find_candidate_bugs(file_data: dict) -> list[dict]:
     prompt = f"""You are a senior code reviewer. Look at the code below from one file
@@ -39,12 +38,7 @@ Code:
 
 JSON response:"""
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    raw = response.choices[0].message.content.strip()
+    raw = call_groq(prompt).strip()
 
     try:
         bugs = json.loads(raw)
@@ -52,6 +46,7 @@ JSON response:"""
         return []
 
     return [bug for bug in bugs if is_valid_bug(bug)]
+
 
 def filter_real_bugs(candidate_bugs: list[dict], file_data: dict) -> list[dict]:
     if not candidate_bugs:
@@ -86,12 +81,7 @@ Claimed bugs:
 
 JSON response with only the real bugs:"""
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    raw = response.choices[0].message.content.strip()
+    raw = call_groq(prompt).strip()
 
     try:
         real_bugs = json.loads(raw)

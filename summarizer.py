@@ -1,9 +1,7 @@
-import os
 import sys
-from groq import Groq
 from reader import find_files
-
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+from groq_client import call_groq
+import config
 
 
 def read_file_contents(files, max_chars_per_file: int = 1500) -> str:
@@ -39,11 +37,7 @@ Code from the project:
 
 Summary:"""
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
+    return call_groq(prompt)
 
 
 def check_summary(summary: str) -> str:
@@ -58,11 +52,8 @@ If something is missing or unclear, reply with: NEEDS_IMPROVEMENT: <short reason
 Summary to check:
 {summary}"""
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content.strip()
+    return call_groq(prompt).strip()
+
 
 def check_accuracy(summary: str, code_context: str) -> str:
     prompt = f"""You are reviewing a summary for accuracy. Compare the summary against
@@ -78,14 +69,14 @@ Actual code:
 Summary to check:
 {summary}"""
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content.strip()
+    return call_groq(prompt).strip()
 
-def summarize_repo(folder_path: str, max_iterations: int = 3) -> dict:
-    files = find_files(folder_path, file_types=[".py", ".md", ".json"])
+
+def summarize_repo(folder_path: str, max_iterations: int = None) -> dict:
+    if max_iterations is None:
+        max_iterations = config.MAX_AGENT_ITERATIONS
+
+    files = find_files(folder_path, file_types=config.DEFAULT_FILE_TYPES)
 
     if not files:
         return {"summary": "No matching files found in this folder.", "iterations": 0}

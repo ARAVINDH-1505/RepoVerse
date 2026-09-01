@@ -1,8 +1,8 @@
-import os
-import json
-from groq import Groq
-
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+import sys
+from pathlib import Path
+from bug_finder import find_bugs
+from groq_client import call_groq
+import config
 
 
 def explain_bug(bug: dict, code_context: str) -> str:
@@ -20,11 +20,7 @@ Relevant code:
 
 Plain English explanation:"""
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
+    return call_groq(prompt)
 
 
 def propose_fix(bug: dict, code_context: str, feedback: str = None) -> str:
@@ -46,11 +42,7 @@ Reply with ONLY the corrected code, no explanation, no markdown formatting.{extr
 
 Corrected code:"""
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content.strip()
+    return call_groq(prompt).strip()
 
 
 def check_fix(bug: dict, original_code: str, fixed_code: str) -> str:
@@ -72,14 +64,13 @@ Fixed code:
 If all three checks pass, reply with exactly: GOOD
 If any fail, reply with: NEEDS_IMPROVEMENT: <specific problem>"""
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content.strip()
+    return call_groq(prompt).strip()
 
 
-def explain_and_fix(bug: dict, code_context: str, max_iterations: int = 3) -> dict:
+def explain_and_fix(bug: dict, code_context: str, max_iterations: int = None) -> dict:
+    if max_iterations is None:
+        max_iterations = config.MAX_AGENT_ITERATIONS
+
     explanation = explain_bug(bug, code_context)
 
     fixed_code = propose_fix(bug, code_context)
@@ -102,20 +93,18 @@ def explain_and_fix(bug: dict, code_context: str, max_iterations: int = 3) -> di
 
 
 if __name__ == "__main__":
-    from bug_finder import find_bugs
-    from reader import find_files
+    if len(sys.argv) < 2:
+        print("Please give a folder path. Example: python fix_explainer.py ./my_project")
+        sys.exit(1)
 
-    target_folder = "./my_project"
+    target_folder = sys.argv[1]
     bugs = find_bugs(target_folder)
 
     if not bugs:
         print("No bugs to explain.")
     else:
         first_bug = bugs[0]
-
-        file_path = first_bug["file"]
-        from pathlib import Path
-        code_context = Path(file_path).read_text(encoding="utf-8", errors="ignore")[:1500]
+        code_context = Path(first_bug["file"]).read_text(encoding="utf-8", errors="ignore")[:1500]
 
         result = explain_and_fix(first_bug, code_context)
 

@@ -16,10 +16,17 @@ def split_file_into_chunks(file_path: Path, chunk_size: int = 500, overlap: int 
 
 
 if __name__ == "__main__":
+    import sys
     from reader import find_files
+    import config
 
-    files = find_files(r"D:\data conquest\rework\AMF brain rework", file_types=[".py", ".md", ".json",".docx"])
+    if len(sys.argv) < 2:
+        print("Please give a folder path. Example: python splitter.py ./my_project")
+        sys.exit(1)
+
+    target_folder = sys.argv[1]
+    files = find_files(target_folder, file_types=config.DEFAULT_FILE_TYPES)
 
     for file in files:
-        chunks = split_file_into_chunks(file)
+        chunks = split_file_into_chunks(file, chunk_size=config.CHUNK_SIZE, overlap=config.CHUNK_OVERLAP)
         print(f"{file} -> {len(chunks)} chunks")

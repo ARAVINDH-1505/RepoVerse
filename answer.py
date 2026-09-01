@@ -1,8 +1,5 @@
-import os
-from groq import Groq
 from searcher import search
-
-client = Groq(api_key=os.environ["GROQ_API_KEY"])
+from groq_client import call_groq
 
 
 def build_prompt(question: str, chunks: list[str], sources: list[str]) -> str:
@@ -36,13 +33,7 @@ def get_answer(question: str, folder_path: str) -> dict:
         }
 
     prompt = build_prompt(question, chunks, sources)
-
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    answer_text = response.choices[0].message.content
+    answer_text = call_groq(prompt)
 
     return {
         "answer": answer_text,
