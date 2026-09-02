@@ -58,3 +58,8 @@ MAX_AGENT_ITERATIONS = 3
 CHROMA_DATA_PATH = str(PROJECT_ROOT / "chroma_data")
 
 DEFAULT_FILE_TYPES = [".py", ".md", ".json"]
+
+# Groq's free tier caps each request around 8000 tokens (~4 characters per token).
+# check_accuracy() sends the code context twice in one prompt, so we keep this
+# conservative to leave room for that, plus the summary text and prompt wording.
+MAX_TOTAL_CONTEXT_CHARS = 4000

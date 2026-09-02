@@ -4,15 +4,34 @@ from groq_client import call_groq
 import config
 
 
-def read_file_contents(files, max_chars_per_file: int = 1500) -> str:
+def read_file_contents(files, max_chars_per_file: int = 400, max_total_chars: int = None) -> str:
+    if max_total_chars is None:
+        max_total_chars = config.MAX_TOTAL_CONTEXT_CHARS
+
     combined = []
+    total_chars = 0
+    skipped_files = 0
+
     for file in files:
+        if total_chars >= max_total_chars:
+            skipped_files += 1
+            continue
+
         try:
             text = file.read_text(encoding="utf-8", errors="ignore")
         except Exception:
             continue
+
         trimmed = text[:max_chars_per_file]
-        combined.append(f"File: {file}\n{trimmed}")
+        entry = f"File: {file}\n{trimmed}"
+        combined.append(entry)
+        total_chars += len(entry)
+
+    if skipped_files:
+        combined.append(
+            f"[Note: {skipped_files} additional file(s) were left out to stay within the model's size limit.]"
+        )
+
     return "\n\n---\n\n".join(combined)
 
 
