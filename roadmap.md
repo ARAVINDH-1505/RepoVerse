@@ -17,6 +17,16 @@ Goal: Point at a folder, ask a question, get an answer with the source file show
 - [x] Fix: storage mixing data across different projects
 - [x] Fix: AI making up answers when no matching code is found
 - [x] Add: indexer script to index any folder from the terminal, no code editing needed
+- [x] Add: shared config.py for all settings (API key, model, chunk size, iteration limits)
+- [x] Add: shared groq_client.py with retries and empty-response checks, used by every module
+- [x] Fix: switched from retired Groq models (llama-3.1-8b-instant, llama-3.3-70b-versatile)
+      to openai/gpt-oss-20b, which is currently active on the free tier
+- [ ] Known issue: main.py's folder_path is not restricted - fine for local use,
+      needs restricting before any public deployment
+- [ ] Known issue: bug_finder.py truncates files with its own hardcoded limit,
+      not config.py's MAX_TOTAL_CONTEXT_CHARS - should be unified
+- [ ] Improvement: add a small pause between per-file Groq calls in the summarizer
+      to avoid triggering rate limits reactively
 - [ ] Support more file types (.js, .ts, .java, etc.)
 - [ ] Docker setup for easy running
 - [ ] GitHub integration (point at a repo URL, not just a local folder)
@@ -24,8 +34,9 @@ Goal: Point at a folder, ask a question, get an answer with the source file show
 
 ## Phase 3: Agentic Features
 
-- [x] Repo Summarizer - reads project code, writes a summary, checks its own
-      work for completeness and accuracy, improves itself in a loop
+- [x] Repo Summarizer - map-reduce design: summarizes each file separately first,
+      then combines those into one project summary, checked for completeness and
+      accuracy in a loop
 - [x] Bug Finder - finds real issues in code, filters out false positives
-- [ ] Fix Explainer - explains a bug and proposes a fix, checks the fix before showing it
+- [x] Fix Explainer - explains a bug and proposes a fix, checks the fix before showing it
 - [ ] Decide: GitHub repo support (URL-based, not just local folder)
