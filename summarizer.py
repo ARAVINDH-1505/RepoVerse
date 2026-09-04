@@ -4,57 +4,86 @@ from groq_client import call_groq
 import config
 
 
-def read_file_contents(files, max_chars_per_file: int = 400, max_total_chars: int = None) -> str:
-    if max_total_chars is None:
-        max_total_chars = config.MAX_TOTAL_CONTEXT_CHARS
+def summarize_single_file(file_path: str, content: str, max_chars: int = 3000) -> str:
+    was_truncated = len(content) > max_chars
+    trimmed = content[:max_chars]
 
-    combined = []
+    truncation_note = (
+        "\n\n[This file was cut off at this point due to length. Do not guess, speculate, "
+        "or invent anything about what might come after this point.]"
+        if was_truncated else ""
+    )
+
+    prompt = f"""Summarize what this single code file does, in 2-3 sentences.
+Only describe what is literally shown below. Do not invent documentation, comments,
+READMEs, future plans, or anything not directly visible in the code shown.
+
+File: {file_path}
+Code:
+{trimmed}{truncation_note}
+
+Summary:"""
+
+    return call_groq(prompt)
+
+
+def build_project_context(folder_path: str) -> str:
+    files = find_files(folder_path, file_types=config.DEFAULT_FILE_TYPES)
+
+    if not files:
+        return ""
+
+    entries = []
     total_chars = 0
-    skipped_files = 0
+    skipped = 0
 
     for file in files:
-        if total_chars >= max_total_chars:
-            skipped_files += 1
-            continue
-
         try:
             text = file.read_text(encoding="utf-8", errors="ignore")
         except Exception:
             continue
 
-        trimmed = text[:max_chars_per_file]
-        entry = f"File: {file}\n{trimmed}"
-        combined.append(entry)
+        if not text.strip():
+            continue
+
+        file_summary = summarize_single_file(str(file), text)
+        entry = f"File: {file}\nSummary: {file_summary}"
+
+        if total_chars + len(entry) > config.MAX_TOTAL_CONTEXT_CHARS:
+            skipped += 1
+            continue
+
+        entries.append(entry)
         total_chars += len(entry)
 
-    if skipped_files:
-        combined.append(
-            f"[Note: {skipped_files} additional file(s) were left out to stay within the model's size limit.]"
+    if skipped:
+        entries.append(
+            f"[Note: {skipped} additional file summaries were left out to stay within size limits.]"
         )
 
-    return "\n\n---\n\n".join(combined)
+    return "\n\n".join(entries)
 
 
-def generate_summary(code_context: str, feedback: str = None) -> str:
+def generate_summary(project_context: str, feedback: str = None) -> str:
     if feedback:
         prompt = f"""Your previous summary of this project was incomplete.
 Feedback on what was missing: {feedback}
 
-Code from the project:
-{code_context}
+Per-file summaries from the project:
+{project_context}
 
-Write an improved summary that fixes this."""
+Write an improved overall project summary that fixes this."""
     else:
-        prompt = f"""You are a senior software engineer. Read the code below from a project
-and write a clear summary. Cover:
+        prompt = f"""You are a senior software engineer. Below are short summaries of each
+file in a project. Using ONLY this information, write a clear overall project summary. Cover:
 1. What the project does
 2. Its main components/files and what each does
 3. What technology or libraries it uses
 
-Code from the project:
-{code_context}
+Per-file summaries from the project:
+{project_context}
 
-Summary:"""
+Overall project summary:"""
 
     return call_groq(prompt)
 
@@ -74,18 +103,21 @@ Summary to check:
     return call_groq(prompt).strip()
 
 
-def check_accuracy(summary: str, code_context: str) -> str:
-    prompt = f"""You are reviewing a summary for accuracy. Compare the summary against
-the actual code below. Check ONLY for made-up claims — things stated in the summary
-that are not actually shown in the code (like features, UIs, or behavior that don't exist).
+def check_accuracy(summary: str, project_context: str) -> str:
+    prompt = f"""You are reviewing a project summary for accuracy. Compare the summary against
+the per-file summaries below. Check for ANY claim in the summary that is not directly
+supported by the per-file summaries - including claims about documentation, comments,
+README files, future plans, or things the project "explicitly notes." If the per-file
+summaries do not mention something, the overall summary must not claim it either, even
+if it sounds plausible or well-written.
 
-If everything in the summary is grounded in the actual code, reply with exactly: GOOD
-If something is made up or not supported by the code, reply with: NEEDS_IMPROVEMENT: <what is made up>
+If everything in the summary is grounded in the per-file summaries, reply with exactly: GOOD
+If something is made up or unsupported, reply with: NEEDS_IMPROVEMENT: <what is made up>
 
-Actual code:
-{code_context}
+Per-file summaries:
+{project_context}
 
-Summary to check:
+Overall summary to check:
 {summary}"""
 
     return call_groq(prompt).strip()
@@ -95,19 +127,17 @@ def summarize_repo(folder_path: str, max_iterations: int = None) -> dict:
     if max_iterations is None:
         max_iterations = config.MAX_AGENT_ITERATIONS
 
-    files = find_files(folder_path, file_types=config.DEFAULT_FILE_TYPES)
+    project_context = build_project_context(folder_path)
 
-    if not files:
+    if not project_context:
         return {"summary": "No matching files found in this folder.", "iterations": 0}
 
-    code_context = read_file_contents(files)
-
-    summary = generate_summary(code_context)
+    summary = generate_summary(project_context)
     iterations_used = 1
 
     for _ in range(max_iterations - 1):
         completeness_result = check_summary(summary)
-        accuracy_result = check_accuracy(summary, code_context)
+        accuracy_result = check_accuracy(summary, project_context)
 
         if completeness_result.startswith("GOOD") and accuracy_result.startswith("GOOD"):
             break
@@ -119,7 +149,7 @@ def summarize_repo(folder_path: str, max_iterations: int = None) -> dict:
             feedback_parts.append(accuracy_result)
 
         combined_feedback = " | ".join(feedback_parts)
-        summary = generate_summary(code_context, feedback=combined_feedback)
+        summary = generate_summary(project_context, feedback=combined_feedback)
         iterations_used += 1
 
     return {"summary": summary, "iterations": iterations_used}
