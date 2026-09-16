@@ -2,9 +2,13 @@ import sys
 import json
 from reader import find_files
 from groq_client import call_groq
+import config
 
 
-def read_file_contents(files, max_chars_per_file: int = 1500) -> list[dict]:
+def read_file_contents(files, max_chars_per_file: int = None) -> list[dict]:
+    if max_chars_per_file is None:
+        max_chars_per_file = config.MAX_CHARS_PER_FILE
+
     file_data = []
     for file in files:
         try:
