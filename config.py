@@ -63,3 +63,12 @@ DEFAULT_FILE_TYPES = [".py", ".md", ".json"]
 # check_accuracy() sends the code context twice in one prompt, so we keep this
 # conservative to leave room for that, plus the summary text and prompt wording.
 MAX_TOTAL_CONTEXT_CHARS = 4000
+
+# Shared per-file truncation limit, used anywhere a single file's raw content
+# is sent to Groq (Summarizer's per-file pass, Bug Finder's per-file scan).
+# One file alone stays well under the token limit even at this size.
+MAX_CHARS_PER_FILE = 3000
+
+# Small pause between back-to-back Groq calls in loops that call it once per
+# file (like the Summarizer), to avoid triggering rate limits reactively.
+PER_FILE_CALL_DELAY_SECONDS = 1.5
