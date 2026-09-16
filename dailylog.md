@@ -50,3 +50,78 @@
 - Learned: more self-checking means better output but more API calls - real trade-off,
   need a hard iteration cap so the agent can never loop forever
 - Next: build the Bug Finder agent
+
+## Day 6 - July 22, 2026
+- Built Bug Finder: propose-then-filter agent loop, file by file
+- First version let through fake security warnings (SQL injection, directory
+  traversal) on a local script with no database and no network-facing input
+- Learned: generic security terms need a real, concrete attack path to be valid -
+  tightened the filter prompt to require this explicitly
+- Also found a real distinction: main.py IS a network-facing API, so folder_path
+  there is a genuine future risk, just not urgent while only I call it locally
+- Fixed a crash from an AI response missing a required field - valid JSON isn't
+  the same as correctly-shaped JSON, added shape validation before using bug data
+- Next: build the Fix Explainer, the last piece of the agent loop
+
+## Day 7 - August 2026
+- Built Fix Explainer: explains a bug in plain English, proposes a fix, checks
+  the fix against three rules (solves the issue, doesn't touch unrelated code,
+  still valid Python) before returning it
+- Decided fixes are only printed, not auto-applied to real files - didn't trust
+  the loop enough yet to let it edit code directly
+- Learned the limits of the filesystem connector: it can read/write files on my
+  laptop, but cannot run terminal commands like git - pushing to GitHub still
+  has to be a manual step, and I decided that's actually fine since I want to
+  review my own commits anyway
+
+## Day 8 - September 1, 2026
+- Noticed the project had grown into repeated logic: Groq client creation and
+  API key loading were copy-pasted across answer.py, summarizer.py, and bug_finder.py
+- Built config.py: one shared place for API key, model name, chunk size, overlap,
+  embedding model name, max loop iterations, storage path, default file types
+- Built groq_client.py: one shared function for every Groq call, with automatic
+  retries and a check that Groq actually returned a real answer
+- Updated every module to use these shared pieces instead of repeating logic
+- Also cleaned up a leftover hardcoded test path from an unrelated project in
+  splitter.py and embedder.py
+- Hit a real production issue: Groq retired the models I'd been using
+  (llama-3.1-8b-instant, llama-3.3-70b-versatile) - had to find and switch to
+  a current model (openai/gpt-oss-20b)
+- Learned: a 404 "model not found" error means the model name is wrong, not the
+  API key - different from a 401 authentication error
+
+## Day 9 - September 2-4, 2026
+- Ran into a 413 Payload Too Large error: the Summarizer sends every file's code
+  in one prompt, and the project has grown too large for Groq's free-tier
+  per-request token limit
+- First fix (a hard character budget across all files) solved the crash, but
+  created a new problem: heavy truncation caused the summary to falsely claim
+  real, working code was "missing" or "not shown"
+- Learned: fixing hallucination doesn't help if the input itself is incomplete -
+  garbage in, garbage out applies to context, not just prompts
+- Redesigned the Summarizer as map-reduce: summarize each file separately in its
+  own small Groq call first, then combine those summaries into one final summary
+- This fixed the token limit problem properly, but revealed a second, worse issue:
+  when a file's summary was still incomplete, the final summary sometimes invented
+  a fake source ("the README explicitly notes...") to explain the gap, instead of
+  just saying something was missing
+- Learned: an AI covering a gap in its information by inventing a plausible-sounding
+  citation is a more serious failure than plain guessing - it manufactures false
+  authority
+- Fixed by giving each file's summary more room before truncating, explicitly
+  telling the AI not to speculate past a truncation point, and tightening the
+  accuracy checker to reject any unsupported claim, not just claims about code
+  behavior specifically
+- Reran after both fixes: the fake README claim and the false "not implemented"
+  claim about check_fix were both gone
+- Noticed a smaller remaining issue: the summary described bug_finder.py's
+  truncation as using a config.py setting, when it actually still uses its own
+  hardcoded limit - logged as a known issue, not fixed yet
+- Noticed heavy Groq rate-limiting (many 429 retries) from firing per-file calls
+  back to back with no pause - works correctly via retries, but slow and
+  inefficient - logged as a known improvement
+- Phase 3 (all three agentic components) is now functionally complete, running
+  on shared config and a shared, retry-safe Groq client
+- Next: unify bug_finder's truncation with config.py, add pacing between
+  per-file Groq calls, then decide the next Phase 2 priority (Docker, more
+  file types, or GitHub URL support)

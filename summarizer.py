@@ -1,10 +1,14 @@
 import sys
+import time
 from reader import find_files
 from groq_client import call_groq
 import config
 
 
-def summarize_single_file(file_path: str, content: str, max_chars: int = 3000) -> str:
+def summarize_single_file(file_path: str, content: str, max_chars: int = None) -> str:
+    if max_chars is None:
+        max_chars = config.MAX_CHARS_PER_FILE
+
     was_truncated = len(content) > max_chars
     trimmed = content[:max_chars]
 
@@ -37,7 +41,7 @@ def build_project_context(folder_path: str) -> str:
     total_chars = 0
     skipped = 0
 
-    for file in files:
+    for index, file in enumerate(files):
         try:
             text = file.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -45,6 +49,9 @@ def build_project_context(folder_path: str) -> str:
 
         if not text.strip():
             continue
+
+        if index > 0:
+            time.sleep(config.PER_FILE_CALL_DELAY_SECONDS)
 
         file_summary = summarize_single_file(str(file), text)
         entry = f"File: {file}\nSummary: {file_summary}"
