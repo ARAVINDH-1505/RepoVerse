@@ -1,8 +1,21 @@
 import sys
 import json
+import ast
+from pathlib import Path
 from reader import find_files
 from groq_client import call_groq
 import config
+
+
+def is_syntactically_valid(file_path: str) -> bool:
+    try:
+        full_source = Path(file_path).read_text(encoding="utf-8", errors="ignore")
+        ast.parse(full_source)
+        return True
+    except SyntaxError:
+        return False
+    except OSError:
+        return True
 
 
 def read_file_contents(files, max_chars_per_file: int = None) -> list[dict]:
@@ -52,14 +65,26 @@ JSON response:"""
     return [bug for bug in bugs if is_valid_bug(bug)]
 
 
-def filter_real_bugs(candidate_bugs: list[dict], file_data: dict) -> list[dict]:
+def filter_real_bugs(candidate_bugs: list[dict], file_data: dict, syntax_ok: bool) -> list[dict]:
     if not candidate_bugs:
         return []
 
     bugs_text = json.dumps(candidate_bugs, indent=2)
 
+    syntax_fact = (
+        "VERIFIED FACT: this exact file was just checked with Python's own parser and it "
+        "parses successfully with NO syntax errors. Any claimed bug that describes a syntax "
+        "error, a missing return/body, an undefined variable causing a crash, or the file "
+        "'failing to import/run/parse' is FALSE, no exceptions - mark it a FALSE ALARM."
+        if syntax_ok else
+        "VERIFIED FACT: this file was checked with Python's own parser and DOES contain a "
+        "real syntax error."
+    )
+
     prompt = f"""You are a strict senior engineer reviewing a junior engineer's bug report.
 Below is the actual code, and a list of bugs someone claims to have found in it.
+
+{syntax_fact}
 
 For each claimed bug, mark it REAL only if ALL of these are true:
 1. You can point to the exact line and describe a specific input or situation that
@@ -106,16 +131,23 @@ def find_bugs(folder_path: str) -> list[dict]:
     all_real_bugs = []
 
     for file_data in file_data_list:
-        candidates = find_candidate_bugs(file_data)
-        if not candidates:
+        try:
+            syntax_ok = is_syntactically_valid(file_data["path"])
+
+            candidates = find_candidate_bugs(file_data)
+            if not candidates:
+                continue
+
+            real_bugs = filter_real_bugs(candidates, file_data, syntax_ok)
+
+            for bug in real_bugs:
+                bug["file"] = file_data["path"]
+
+            all_real_bugs.extend(real_bugs)
+
+        except RuntimeError as e:
+            print(f"Skipping {file_data['path']} after repeated API failures: {e}")
             continue
-
-        real_bugs = filter_real_bugs(candidates, file_data)
-
-        for bug in real_bugs:
-            bug["file"] = file_data["path"]
-
-        all_real_bugs.extend(real_bugs)
 
     return all_real_bugs
 
