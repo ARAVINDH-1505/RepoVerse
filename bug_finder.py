@@ -7,15 +7,17 @@ from groq_client import call_groq
 import config
 
 
-def is_syntactically_valid(file_path: str) -> bool:
+def is_syntactically_valid(file_path: str):
     try:
         full_source = Path(file_path).read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        return None  # could not verify either way
+
+    try:
         ast.parse(full_source)
         return True
     except SyntaxError:
         return False
-    except OSError:
-        return True
 
 
 def read_file_contents(files, max_chars_per_file: int = None) -> list[dict]:
@@ -71,15 +73,23 @@ def filter_real_bugs(candidate_bugs: list[dict], file_data: dict, syntax_ok: boo
 
     bugs_text = json.dumps(candidate_bugs, indent=2)
 
-    syntax_fact = (
-        "VERIFIED FACT: this exact file was just checked with Python's own parser and it "
-        "parses successfully with NO syntax errors. Any claimed bug that describes a syntax "
-        "error, a missing return/body, an undefined variable causing a crash, or the file "
-        "'failing to import/run/parse' is FALSE, no exceptions - mark it a FALSE ALARM."
-        if syntax_ok else
-        "VERIFIED FACT: this file was checked with Python's own parser and DOES contain a "
-        "real syntax error."
-    )
+    syntax_fact = {
+        True: (
+            "VERIFIED FACT: this exact file was just checked with Python's own parser and it "
+            "parses successfully with NO syntax errors. Any claimed bug that describes a syntax "
+            "error, a missing return/body, an undefined variable causing a crash, or the file "
+            "'failing to import/run/parse' is FALSE, no exceptions - mark it a FALSE ALARM."
+        ),
+        False: (
+            "VERIFIED FACT: this file was checked with Python's own parser and DOES contain a "
+            "real syntax error."
+        ),
+        None: (
+            "NOTE: this file's syntax could not be independently verified (it could not be read "
+            "for checking). Judge any syntax-related claims in this report on their own merits, "
+            "same as any other claim - do not assume either way."
+        ),
+    }[syntax_ok]
 
     prompt = f"""You are a strict senior engineer reviewing a junior engineer's bug report.
 Below is the actual code, and a list of bugs someone claims to have found in it.
