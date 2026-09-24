@@ -57,7 +57,25 @@ MAX_AGENT_ITERATIONS = 3
 
 CHROMA_DATA_PATH = str(PROJECT_ROOT / "chroma_data")
 
-DEFAULT_FILE_TYPES = [".py", ".md", ".json"]
+DEFAULT_FILE_TYPES = [
+    ".py", ".md", ".json",
+    ".js", ".ts", ".jsx", ".tsx",
+    ".java", ".go", ".rs", ".cpp", ".c", ".h",
+    ".html", ".css", ".yaml", ".yml",
+]
+
+# Bug Finder's syntax check uses Python's own ast.parse, which only understands
+# Python. It intentionally only scans .py files for now, regardless of this
+# list - scanning other languages here would produce false syntax-error claims.
+
+# Only folder_path values inside this directory (or its subfolders) are
+# accepted by the API. Defaults to the user's home directory; override with
+# the REPOVERSE_ALLOWED_ROOT environment variable for a narrower scope.
+ALLOWED_PROJECT_ROOT = (
+    os.getenv("REPOVERSE_ALLOWED_ROOT")
+    or _load_dotenv_key("REPOVERSE_ALLOWED_ROOT")
+    or str(Path.home())
+)
 
 # Groq's free tier caps each request around 8000 tokens (~4 characters per token).
 # check_accuracy() sends the code context twice in one prompt, so we keep this
