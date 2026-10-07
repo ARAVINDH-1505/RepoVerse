@@ -6,6 +6,8 @@ from answer import get_answer
 from summarizer import summarize_repo
 from bug_finder import find_bugs
 from fix_explainer import explain_and_fix
+from github_indexer import clone_github_repo
+from indexer import index_folder
 import config
 
 app = FastAPI(title="RepoVerse API")
@@ -70,6 +72,10 @@ class FixRequest(BaseModel):
     bug: BugModel
 
 
+class GitHubRequest(BaseModel):
+    repo_url: str
+
+
 @app.post("/query")
 def query(request: QuestionRequest):
     validate_folder_path(request.folder_path)
@@ -96,3 +102,14 @@ def fix(request: FixRequest):
 
     code_context = file_path.read_text(encoding="utf-8", errors="ignore")[:config.MAX_CHARS_PER_FILE]
     return explain_and_fix(bug, code_context)
+
+
+@app.post("/index-github")
+def index_github(request: GitHubRequest):
+    try:
+        local_path = clone_github_repo(request.repo_url)
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    index_folder(str(local_path))
+    return {"folder_path": str(local_path)}

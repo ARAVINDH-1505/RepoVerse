@@ -3,9 +3,13 @@ from reader import find_files
 from splitter import split_file_into_chunks
 from embedder import create_embeddings
 from storage import store_chunks
+import config
 
 
-def index_folder(folder_path: str, file_types: list[str] = [".py", ".md", ".json"]) -> None:
+def index_folder(folder_path: str, file_types: list[str] = None) -> None:
+    if file_types is None:
+        file_types = config.DEFAULT_FILE_TYPES
+
     files = find_files(folder_path, file_types=file_types)
 
     if not files:
@@ -13,7 +17,7 @@ def index_folder(folder_path: str, file_types: list[str] = [".py", ".md", ".json
         return
 
     for file in files:
-        chunks = split_file_into_chunks(file)
+        chunks = split_file_into_chunks(file, chunk_size=config.CHUNK_SIZE, overlap=config.CHUNK_OVERLAP)
         embeddings = create_embeddings(chunks)
         store_chunks(chunks, embeddings, str(file), folder_path)
         print(f"Indexed {len(chunks)} chunks from {file}")
