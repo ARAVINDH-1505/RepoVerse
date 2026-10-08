@@ -1,0 +1,12 @@
+services:
+  repoverse:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - REPOVERSE_ALLOWED_ROOT=/app
+    volumes:
+      - ./chroma_data:/app/chroma_data
+      - ./cloned_repos:/app/cloned_repos
+      - ./local_projects:/app/local_projects

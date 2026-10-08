@@ -52,8 +52,11 @@ Goal: Point at a folder, ask a question, get an answer with the source file show
 Goal: complete, working end to end in real time - GitHub URL support, Docker, and a
 simple frontend, all built on the now-complete API surface (/query, /summarize, /bugs, /fix).
 
-- [ ] GitHub URL support: clone + index a remote repo via a new endpoint
-- [ ] Docker: one-command run for the whole API
+- [x] GitHub URL support: clone + index a remote repo via /index-github. Verified end to
+      end against octocat/Spoon-Knife - clone, index, query, and correct grounded answer
+      with real sources, all confirmed through the live API
+- [x] Docker: Dockerfile + docker-compose.yml, persistent volumes for chroma_data and
+      cloned_repos, local_projects volume for indexing host folders through the container
 - [ ] Frontend: single page hitting all four endpoints
 - [ ] README rewrite for a recruiter-facing first impression
 - [ ] Full end-to-end verification pass (query, summarize, bugs, fix - all tested together)
